@@ -1,0 +1,80 @@
+# TodoMVC Architecture Plan
+
+## Overview
+Full-stack TodoMVC: Rust Axum backend + Leptos WASM frontend, SQLite storage.
+
+## Workspace Structure
+```
+Cargo.toml              # workspace: members = ["backend", "frontend"]
+backend/
+  Cargo.toml            # axum, tokio, serde, serde_json, rusqlite, uuid, tower-http
+  src/
+    main.rs             # server startup, router assembly, static file serving
+    db.rs               # SQLite init, migrations, connection pool
+    models.rs           # Todo struct (id, title, completed, order) + serde
+    repo.rs             # CRUD: list_all, create, get_by_id, update, delete, delete_completed, toggle_all
+    routes.rs           # Axum handlers: GET/POST/PATCH/DELETE /api/todos/*
+  tests/
+    api_tests.rs        # integration tests against real HTTP server
+frontend/
+  Cargo.toml            # leptos, gloo-net, serde, wasm-bindgen
+  Trunk.toml            # build config, proxy to backend in dev
+  index.html            # entry point, loads todomvc-app-css
+  src/
+    main.rs             # mount App component
+    app.rs              # TodoApp root: fetches todos, composes children
+    api.rs              # HTTP client functions (gloo-net)
+    models.rs           # Shared Todo type (mirrors backend)
+    router.rs           # Hash-based routing (#/, #/active, #/completed)
+    components/
+      mod.rs
+      header.rs         # TodoHeader: input + create
+      todo_item.rs      # TodoItem: display, toggle, delete, inline edit
+      todo_list.rs      # TodoList: renders items, toggle-all
+      footer.rs         # TodoFooter: count, filters, clear completed
+  src/tests/            # wasm-bindgen-test unit tests
+Makefile                # dev/build scripts (trunk build, cargo run)
+.github/workflows/ci.yml
+Dockerfile
+.dockerignore
+README.md
+```
+
+## Issue Dependency Graph
+```
+Phase 1 - Foundation:
+  #1 Cargo workspace + backend crate
+  #2 Leptos frontend crate + Trunk
+
+Phase 2 - Backend Core (depends on #1):
+  #3 Static file serving + CSS (depends on #1, #2)
+  #4 CI pipeline (depends on #1, #2)
+  #5 SQLite setup (depends on #1)
+  #6 Data model + repo (depends on #5)
+  #7 REST API endpoints (depends on #6)
+  #8 API integration tests (depends on #7)
+
+Phase 3 - Frontend Core (depends on #7):
+  #9  API client module (depends on #7)
+  #10 TodoHeader (depends on #9)
+  #11 TodoItem (depends on #9)
+  #12 TodoList + toggle-all (depends on #11)
+  #13 Inline editing (depends on #11)
+  #14 Hash-based routing (depends on #12)
+
+Phase 4 - Assembly:
+  #15 TodoFooter (depends on #14)
+  #16 TodoApp root (depends on #10, #12, #15)
+  #17 Frontend tests (depends on #16)
+  #18 Dockerfile (depends on #16)
+  #19 README
+```
+
+## Key Design Decisions
+- **rusqlite** (not sqlx): simpler, no async complexity for SQLite, no compile-time query checking needed
+- **gloo-net** for frontend HTTP: standard WASM HTTP client
+- **UUID strings** for todo IDs: avoids integer conflicts, matches TodoMVC spec
+- **tower-http** ServeDir for static files: serves Trunk's dist/ output
+- **Shared types**: backend models.rs and frontend models.rs mirror each other (no shared crate to keep workspace simple)
+- **Hash routing**: client-side only via gloo-utils or manual window().location().hash()
+- **Single binary deployment**: Dockerfile embeds dist/ assets into the container alongside the backend binary
