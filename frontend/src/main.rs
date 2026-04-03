@@ -1,5 +1,8 @@
 use leptos::*;
 
+pub mod api;
+pub mod models;
+
 #[component]
 fn App() -> impl IntoView {
     view! {
