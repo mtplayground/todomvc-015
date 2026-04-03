@@ -6,10 +6,8 @@ use tower_http::cors::{Any, CorsLayer};
 use tower_http::services::{ServeDir, ServeFile};
 use tracing_subscriber::EnvFilter;
 
-mod db;
-mod models;
-mod repo;
-mod routes;
+use backend::db;
+use backend::routes;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
