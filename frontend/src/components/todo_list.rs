@@ -3,10 +3,28 @@ use leptos::*;
 use crate::api;
 use crate::components::todo_item::TodoItem;
 use crate::models::Todo;
+use crate::router::Filter;
 
 #[component]
-pub fn TodoList(todos: ReadSignal<Vec<Todo>>, set_todos: WriteSignal<Vec<Todo>>) -> impl IntoView {
+pub fn TodoList(
+    todos: ReadSignal<Vec<Todo>>,
+    set_todos: WriteSignal<Vec<Todo>>,
+    filter: ReadSignal<Filter>,
+) -> impl IntoView {
     let all_completed = move || todos.get().iter().all(|t| t.completed) && !todos.get().is_empty();
+
+    let filtered_todos = move || {
+        let current_filter = filter.get();
+        todos
+            .get()
+            .into_iter()
+            .filter(|t| match current_filter {
+                Filter::All => true,
+                Filter::Active => !t.completed,
+                Filter::Completed => t.completed,
+            })
+            .collect::<Vec<_>>()
+    };
 
     let handle_toggle_all = move |_| {
         let new_completed = !all_completed();
@@ -55,7 +73,7 @@ pub fn TodoList(todos: ReadSignal<Vec<Todo>>, set_todos: WriteSignal<Vec<Todo>>)
             <label for="toggle-all">"Mark all as complete"</label>
             <ul class="todo-list">
                 <For
-                    each=move || todos.get()
+                    each=filtered_todos
                     key=|todo| todo.id.clone()
                     children=move |todo| {
                         view! {
