@@ -1,6 +1,7 @@
 use leptos::*;
 
 pub mod api;
+pub mod components;
 pub mod models;
 
 #[component]
