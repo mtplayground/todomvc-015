@@ -1,0 +1,15 @@
+target/
+frontend/dist/
+node_modules/
+.git/
+.claude/
+.gh_token
+.github_token
+.database_url
+.task_id
+.container_name
+.app_name
+.gh_user
+.pipeline-state.json
+.progress
+*.db
